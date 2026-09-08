@@ -1,0 +1,38 @@
+name: Unzip keyboard_app
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'keyboard_app.zip'
+      - '.github/workflows/unzip_keyboard_app.yml'
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure unzip is installed
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Show repository root
+        run: ls -la
+
+      - name: Unzip keyboard_app.zip
+        run: |
+          if [ -f keyboard_app.zip ]; then
+            mkdir -p keyboard_app
+            unzip -o keyboard_app.zip -d keyboard_app
+            echo "Unzipped keyboard_app.zip into ./keyboard_app/"
+          else
+            echo "keyboard_app.zip not found in repository root" >&2
+            exit 1
+          fi
+
+      - name: Upload extracted files as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyboard_app-extracted
+          path: keyboard_app
