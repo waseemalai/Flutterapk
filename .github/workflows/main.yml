@@ -3,7 +3,7 @@ name: Extract Zip to Root
 on:
   push:
     paths:
-      - '**/*.zip'   # jab bhi koi zip push ho
+      - 'keyboard_app.zip'   # jab bhi koi zip push ho
   workflow_dispatch:  # manual run
 
 jobs:
