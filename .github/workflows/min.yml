@@ -52,4 +52,4 @@ on:
               git config --local user.name "github-actions"
               git add .
               git commit -m "unzip"
-              git push origin
+              git push origin main
