@@ -1,73 +1,70 @@
 # Professional Keyboard (Flutter + Android)
 
-## Important — architecture
+## Architecture
 
-Android par custom keyboard hamesha ek native **InputMethodService** ke through
-banta hai — Flutter engine ko seedha IME ke andar chalana officially supported
-nahi hai. Isliye is project mein:
+Android par custom keyboard hamesha ek native **InputMethodService** ke
+through banta hai — Flutter engine seedha IME ke andar chalana officially
+supported nahi hai. Isliye:
 
 - **Flutter (`lib/main.dart`)** → setup/onboarding screen: status check karta
   hai aur user ko system settings tak le jaata hai.
-- **Native Kotlin (`CustomKeyboardService.kt`)** → asli keyboard jo typing
-  screen par dikhta hai (fast + battery friendly, jaise Gboard/SwiftKey bhi
-  natively kaam karte hain).
+- **Native Kotlin (`keyboard_native/kotlin/*.kt`)** → asli keyboard jo typing
+  screen par dikhta hai.
+- **`android/` folder repo mein committed NAHI hai.** Har build (local ya CI)
+  par ek fresh, guaranteed-valid Gradle project generate hota hai
+  (`flutter create`), phir `scripts/apply_keyboard_files.py` humare custom
+  files usmein daal deta hai. Isse "unsupported Gradle project" / missing
+  gradle-wrapper jaisi errors kabhi nahi aayengi.
 
-Keyboards ke liye Android mein "runtime permission popup" jaisa kuch nahi hota
-(camera/location wale tarah). Iski jagah do steps hote hain:
-1. Settings mein keyboard ko **enable** karna
-2. Us keyboard ko **active/selected** keyboard banana
+## Local machine par run karna
 
-Yehi do steps is app ka setup screen guide karta hai.
+```bash
+flutter create --platforms=android --org com.example --project-name keyboard_app .
+python3 scripts/apply_keyboard_files.py com.example.keyboard_app
+flutter pub get
+flutter run
+```
 
-## Setup steps
+(Pehli line ek fresh valid `android/` folder banati hai, doosri line usmein
+apna keyboard code inject karti hai.)
 
-1. Fresh Flutter project banao (agar already nahi hai):
-   ```
-   flutter create keyboard_app
-   cd keyboard_app
-   ```
-2. Is zip ke files copy karo:
-   - `lib/main.dart` → apne project ke `lib/main.dart` ko replace karo
-   - `pubspec.yaml` → replace karo (ya dependencies merge kar lo)
-   - `android_snippet/app/src/main/kotlin/com/example/keyboard_app/MainActivity.kt`
-     → apne `android/app/src/main/kotlin/<your_package_path>/MainActivity.kt`
-     ko replace karo
-   - `android_snippet/app/src/main/kotlin/com/example/keyboard_app/CustomKeyboardService.kt`
-     → same folder mein add karo
-   - `android_snippet/app/src/main/res/xml/method.xml`
-     → apne `android/app/src/main/res/xml/method.xml` folder mein add karo
-     (xml folder nahi hai to bana lo)
-3. `AndroidManifest_ADDITIONS.xml` mein diya `<service>` block apne
-   `android/app/src/main/AndroidManifest.xml` ki `<application>` tag ke andar
-   paste karo.
-4. Agar tumhara package name `com.example.keyboard_app` se alag hai, to:
-   - `.kt` files ke top wali `package` line update karo
-   - Manifest ke service name path bhi match karna chahiye
-5. Run:
-   ```
-   flutter pub get
-   flutter run
-   ```
+## APK build karna (local)
+
+```bash
+flutter build apk --release
+```
+APK yahan milega: `build/app/outputs/flutter-apk/app-release.apk`
+
+## GitHub Actions se APK build karna
+
+`.github/workflows/build-apk.yml` already yehi steps automatically karta hai:
+1. Flutter setup
+2. `flutter create --platforms=android .`
+3. `python3 scripts/apply_keyboard_files.py ...`
+4. `flutter build apk --release`
+5. APK ko "Artifacts" section mein upload
+
+Bas repo ko GitHub par push karo aur **Actions** tab mein workflow run hote
+dekho. Build complete hone par **app-release-apk** artifact download kar lo.
 
 ## App mein kya hoga
 
-- Ek screen jisme 2 steps dikhenge:
-  1. **Open Settings** — Language & Input settings kholta hai jahan keyboard
-     ko ON karna hai.
-  2. **Choose Keyboard** — system input-method picker kholta hai jahan is
-     keyboard ko select karna hai.
-- Dono steps complete hote hi green confirmation message dikhega.
-- Koi bhi text field open karoge to naya keyboard use ho sakega.
+- Setup screen mein 2 steps:
+  1. **Open Settings** — keyboard ko ON karne ke liye
+  2. **Choose Keyboard** — is keyboard ko active banane ke liye
+- Dono complete hote hi confirmation message.
 
-## Keyboard features (native side)
+## Keyboard features
 
-- QWERTY layout, Shift (auto lower after 1 capital letter, standard behaviour)
-- Numbers/symbols page toggle (`123` / `ABC`)
-- Backspace, space, enter keys
-- Dark theme styling — easily customizable colors in `CustomKeyboardService.kt`
+- QWERTY layout, Shift (1 capital ke baad auto-lowercase)
+- 123/ABC symbol toggle
+- Backspace, space, enter
+- Dark theme (colors `keyboard_native/kotlin/CustomKeyboardService.kt` mein
+  easily change ho sakte hain)
 
-## Extending
+## Different package name use karna hai?
 
-- Add more languages: extra `<subtype>` entries in `method.xml`.
-- Add emoji/suggestion bar: extend `buildKeyboardView()` with an extra row.
-- Prettier keys: swap `Button` backgrounds for custom drawables/rounded corners.
+Har jagah `com.example.keyboard_app` ko apne package se replace karo:
+- `flutter create --org <your.org> --project-name <name> .`
+- `python3 scripts/apply_keyboard_files.py <your.package.name>`
+- workflow file mein bhi wahi package name update karo
