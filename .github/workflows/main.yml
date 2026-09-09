@@ -1,0 +1,55 @@
+
+Search...
+About
+Blog
+Portfolio
+Recipes
+Email
+Using GitHub Actions to automatically unpack a zip archive
+illustrationsillustrationsillustrationsillustrationsillustrationsillustrationsillustrations
+#GitHub #Automation #DevOps #CICD
+post-thumb
+
+
+Published on 3 November 2022 by Andrew Owen (3 minutes)
+
+I was recently working with some software that could push a zip archive of content to a Git repository. However, what I really wanted was for the contents of the archive to be pushed to the repository. So I created a GitHub Action to do that for me. I’ve covered the format of GitHub Actions before. But to recap:
+
+name is what gets displayed in the actions list.
+on sets the triggers:
+push and pull trigger the script on push and pull requests. If you don’t specify branches, they default to main.
+paths specifies the paths to match. In this case, the script will trigger when a zip file is pushed.
+worklflow_dispatch enables you to manually trigger the script from the actions list.
+jobs defines one or more named tasks, in this example unzip.
+runs-on specifies the VM environment. If you can use Ubuntu, it’s the cheapest option with hosted runners.
+steps can be used to invoke actions such as checkout (which fetches a copy of the repository to the VM) and to execute shell commands with name: run.
+run with a pipe character ( | ) executes a multi-line script. Without it, a single line is executed.
+And here’s the action I created:
+
+name: extract a zip file
+on:
+  push:
+    paths:
+    - 'uploads/**.zip'
+  workflow_dispatch:
+    jobs:
+      unzip:
+        runs-on: ubuntu-latest
+        permissions:
+          contents: write
+        steps:
+          - uses: actions/checkout@v4
+          - name:
+            run: |
+              rm -r uploads/extracted
+              filename=$(basename -s .zip *.zip)
+              unzip *.zip
+              rm *.zip
+              mv $filename temp
+              mv temp/out/* .
+              rm -r temp
+              git config --local user.email "github-actions@users.noreply.github.com"
+              git config --local user.name "github-actions"
+              git add .
+              git commit -m "unzip"
+              git push origin
